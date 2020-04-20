@@ -1,8 +1,12 @@
 import React from "react";
-import {render} from "@testing-library/react";
-import MissionsList from './MissionsList';
+import {render, fireEvent, waitFor} from "@testing-library/react";
+import userEvent from '@testing-library/user-event';
+import App from './App';
+import {fetchMissions as mockFetchMissions} from './api/fetchMissions';
 
-const missionsData = [
+
+const missionsData = {
+    data: [
     {
       mission_name: "Thaicom",
       mission_id: "9D1B7E0",
@@ -25,30 +29,22 @@ const missionsData = [
       description:
         "Telstar 19V (Telstar 19 Vantage) is a communication satellite in the Telstar series of the Canadian satellite communications company Telesat. It was built by Space Systems Loral (MAXAR) and is based on the SSL-1300 bus. As of 26 July 2018, Telstar 19V is the heaviest commercial communications satellite ever launched, weighing at 7,076 kg (15,600 lbs) and surpassing the previous record, set by TerreStar-1 (6,910 kg/15230lbs), launched by Ariane 5ECA on 1 July 2009.",
     },
-  ];
+  ]};
+// mock the fetchmissions function
+jest.mock("./api/fetchMissions");
 
-test('missionslist renders without errors', () => {
-    render(<MissionsList missions={[]}/>);
-})
 
-test("render list of misstions after the API call", ()=>{
-    // render component with an empty array for the missions props
-    // re-render component with missions data (simulating the user experience of clickging the 'get data' button)
-    const {rerender, getByText, queryAllByTestId} = render(<MissionsList missions={[]}/>);
 
-    expect(queryAllByTestId(/missions/i)).toHaveLength(0);
+// async/await
+test('renders mission data when getdata button is clicked', async () => {
+    mockFetchMissions.mockResolvedValueOnce(missionsData);
 
-    rerender(<MissionsList missions={missionsData}/>);
+    const {getByText, debug, queryAllByTestId} = render(<App />);
+    debug()
+    const button = getByText(/get data/i);
+    userEvent.click(button);
+    debug();
 
-    // TASKS:
-    // query for the missions being rendered
-   const thaicom = getByText(/thaicom/i);
-   const telstar = getByText(/telstar/i); 
-
-    // assert that they are listed on the dom
-    expect(thaicom).toBeInTheDocument();
-    expect(telstar).toBeInTheDocument();
-
-    const missions = queryAllByTestId(/missions/i)
-    expect(missions).toHaveLength(2);
-})
+    await waitFor(() => expect(queryAllByTestId(/missions/i)).toHaveLength(2))
+    debug();
+});
